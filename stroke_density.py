@@ -1,13 +1,19 @@
 import numpy as np
 import cv2
 from scipy.spatial import ConvexHull
+import visualize
 
 
 # find the points from an input image
 def getPoints(image_string):
+    # cv2's channels are BGR
     img = cv2.imread(image_string, cv2.IMREAD_COLOR)
-    num_rows, num_cols, num_channels = img.shape
-    points = img.reshape(num_rows*num_cols,num_channels)
+    # flip the r and b channels
+    points = np.reshape(img, [-1, 3])
+    r = points[:, 0].copy()
+    b = points[:, 2].copy()
+    points[:, 0] = b
+    points[:, 2] = r
     return points
 
 
@@ -31,16 +37,14 @@ def getBarycenter(hull):
     return total
 
 
-# calculate rays between the image colors and the barycenter
-def getRays(barycenter, points):
-    difference = points - barycenter
-    norm = np.linalg.norm(difference, axis=1).reshape(-1,1)
-    rays = difference/(norm)
-    return rays
+def getRayDirs(barycenter, points):
+    diff = points - barycenter
+    factor = np.linalg.norm(diff, axis=1, keepdims=True)
+    return diff / factor
 
 
 # get the intersections of each ray from the barycenter to the colors
-def getIntersections(rays, hull):
+def getIntersections(barycenter, rays, hull):
     return []
 
 
@@ -48,9 +52,10 @@ def getIntersections(rays, hull):
 def main():
     points = getPoints("./data/sample-input.png")
     hull = getHull(points)
+    visualize.show_convex_hull(hull)
     barycenter = getBarycenter(hull)
-    rays = getRays(barycenter, hull.points)
-    intersections = getIntersections(rays, hull)
+    ray_dirs = getRayDirs(barycenter, points)
+    intersections = getIntersections(barycenter, ray_dirs, hull)
 
 
 if __name__ == "__main__":
