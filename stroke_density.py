@@ -7,10 +7,7 @@ from scipy.spatial import ConvexHull
 def getPoints(image_string):
     img = cv2.imread(image_string, cv2.IMREAD_COLOR)
     num_rows, num_cols, num_channels = img.shape
-    points = []
-    for i in range(num_rows):
-        for j in range(num_cols):
-            points.append(img[i,j].tolist())
+    points = img.reshape(num_rows*num_cols,num_channels)
     return points
 
 
@@ -25,24 +22,20 @@ def getBarycenter(hull):
     points = hull.points
     faces = hull.simplices
     surface_area = hull.area
-    total = [0,0,0]
-    for face in faces:
-        v0 = points[face[0]]
-        v1 = points[face[1]]
-        v2 = points[face[2]]
-        area = 0.5 * np.linalg.norm(np.cross(v1 - v0, v2 - v0))
-        centroid = (v0 + v1 + v2)/3
-        total += area * centroid
-    total /= surface_area
+    v0 = points[faces[:,0]]
+    v1 = points[faces[:,1]]
+    v2 = points[faces[:,2]]
+    centroid = (v0 + v1 + v2)/3
+    area = 0.5 * np.linalg.norm(np.cross(v1 - v0, v2 - v0), axis=1).reshape(-1,1)
+    total = np.sum(centroid * area, axis=0)/surface_area
     return total
 
 
-# calculate the outgoing rays for 
+# calculate rays between the image colors and the barycenter
 def getRays(barycenter, points):
-    rays = []
-    for point in points:
-        ray = (point - barycenter)/np.linalg.norm(point - barycenter)
-        rays.append(ray)
+    difference = points - barycenter
+    norm = np.linalg.norm(difference, axis=1).reshape(-1,1)
+    rays = difference/(norm)
     return rays
 
 
@@ -56,7 +49,7 @@ def main():
     points = getPoints("./data/sample-input.png")
     hull = getHull(points)
     barycenter = getBarycenter(hull)
-    rays = getRays(barycenter, points)
+    rays = getRays(barycenter, hull.points)
     intersections = getIntersections(rays, hull)
 
 
