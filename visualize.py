@@ -30,4 +30,4 @@ def show_convex_hull(hull: ConvexHull):
     adj_col = adj_col.tolist()
     ax.scatter(sampled_points[:, 0], sampled_points[:, 1], sampled_points[:, 2], alpha=1, c=adj_col)
 
-    plt.show()
+    return plt
