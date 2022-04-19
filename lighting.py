@@ -24,7 +24,11 @@ def computeNormalizedChannelIntensity(input):
     # print(max_c)
     # print(min_c)
 
+    # max_c = np.max(max_c)
+    # min_c = np.min(min_c)
+
     normalized_c = (blurred_img - min_c) / (max_c - min_c).astype(np.float64)
+    # normalized_c = blurred_img / max_c
 
     return normalized_c
 
@@ -73,17 +77,35 @@ def computeCoarseLightingEffect(N):
     # TODO: Vectorize this
    
     # Top right of image
-    l_x = 475
-    l_y = 50
+    # l_x = 475
+    # l_y = 50
+    # l_z = 1
+    l_x = 480
+    l_y = 0
     l_z = 1
 
     height, width, _  = N.shape
     print(width, height)
+
+    top_left = np.array([0, 0], dtype=np.float32)
+    top_right = np.array([0, width-1], dtype=np.float32)
+    bottom_left = np.array([height-1, 0], dtype=np.float32)
+    bottom_right = np.array([height-1, width-1], dtype=np.float32)
+    light_loc = np.array([l_y, l_x], dtype=np.float32)
+    corners = [top_left, top_right, bottom_left, bottom_right]
+    dists = []
+    for corner in corners:
+        dists.append(np.sqrt(np.square(light_loc - corner)))
+    max_dist = np.max(dists)
    
     delta = float(1.0)
 
     p_x, p_y = np.meshgrid(np.arange(width), np.arange(height))
     p_d = np.sqrt((p_x - l_x)**2 + (p_y - l_y)**2)
+
+    light_dir_p_d = p_d / max_dist
+
+    # delta = delta / max_dist
 
     # Trying
     # l_x = (2 * l_x / float(width)) - 1
@@ -117,7 +139,8 @@ def computeCoarseLightingEffect(N):
     for y in range(height):
         for x in range(width):
             for c in range(3):
-                light_direction = np.array([l_z, p_d[y, x]])
+                # light_direction = np.array([l_z, p_d[y, x]])
+                light_direction = np.array([l_z, light_dir_p_d[y, x]])
                 # print(light_direction)
                 light_direction = light_direction / np.sqrt(np.sum(light_direction**2))
                 # print(light_direction)
@@ -131,6 +154,16 @@ def computeCoarseLightingEffect(N):
                 x_interp = l_x + cos_theta[y, x] * (p_d[y, x] + delta)
                 y_interp = l_y + sin_theta[y, x] * (p_d[y, x] + delta) 
                 
+                # print("x: ", x)
+                # print("y: ", y)
+                # print("x interp: ", x_interp)
+                # print("y interp: ", y_interp)
+
+                n2 = N[
+                    np.clip(round(x_interp), 0, height-1),
+                    np.clip(round(y_interp), 0, width-1), 
+                    c]
+
                 # n1 = N[
                 #     round(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2)),
                 #     round(((l_x + cos_theta[y, x] * p_d[y, x]) + 1) * width / float(2)), 
@@ -139,8 +172,11 @@ def computeCoarseLightingEffect(N):
                 # x_interp = ((l_x + cos_theta[y, x] * (p_d[y, x] + delta)) + 1) * width / float(2)
                 # y_interp = ((l_y + sin_theta[y, x] * (p_d[y, x] + delta)) + 1) * height / float(2)
 
-                n2 = bilinear_interpolate(N[:, :, c], x_interp, y_interp, width, height)
+                # n2 = bilinear_interpolate(N[:, :, c], x_interp, y_interp, width, height)
                 
+                # print(n1)
+                # print(n2)
+                # exit(0)
 
                 wave_direction = np.array([n2 - n1, delta])
                 # print(wave_direction)
@@ -155,8 +191,12 @@ def computeCoarseLightingEffect(N):
                 #                 print(l_z)
                 #                 print(light_direction)
                 #                 print(wave_direction)
+                # print(wave_direction)
+                # print(light_direction)
 
                 E[y, x, c] = np.dot(wave_direction, light_direction)
+                # print(E[y, x, c])
+                # exit(0)
                 # if ((E[y, x, c] < 0)):
                     # print("bad1", E[y, x, c])
                     # exit()
@@ -178,14 +218,13 @@ def computeCoarseLightingEffect(N):
 def main():
     print("Testing lighting.py")
     img = cv2.imread("./data/sample-input.png", cv2.IMREAD_COLOR)
-    
+
     N = computeNormalizedChannelIntensity(img)
     cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
 
-
     # TODO: push to branch
     # TODO: examine mouse/light position bounds in Painting Light code
-    N = cv2.imread("./data/sample-N.png", cv2.IMREAD_COLOR)
+    N = cv2.imread("./data/normalized-channels.png", cv2.IMREAD_COLOR)
     N = N / float(255) 
 
     E = computeCoarseLightingEffect(N)
