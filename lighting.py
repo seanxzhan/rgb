@@ -73,8 +73,8 @@ def computeCoarseLightingEffect(N):
     # TODO: Vectorize this
    
     # Top right of image
-    l_x = 475
-    l_y = 50
+    l_x = 480
+    l_y = 0
     l_z = 1
 
     height, width, _  = N.shape
@@ -82,33 +82,34 @@ def computeCoarseLightingEffect(N):
    
     delta = float(1.0)
 
-    p_x, p_y = np.meshgrid(np.arange(width), np.arange(height))
-    p_d = np.sqrt((p_x - l_x)**2 + (p_y - l_y)**2)
-
-    # Trying
-    # l_x = (2 * l_x / float(width)) - 1
-    # l_y = (2 * l_y / float(height)) - 1
-    # print(l_x, l_y)
-
-    # p_x, p_y = np.meshgrid((2 * np.arange(width) / float(width)) - 1, (2 * np.arange(height) / float(height)) - 1)
+    # p_x, p_y = np.meshgrid(np.arange(width), np.arange(height))
     # p_d = np.sqrt((p_x - l_x)**2 + (p_y - l_y)**2)
-    
+
+    # Normalizing light/mouse location to [-1, 1] x [-1, 1]
+    l_x = (2 * l_x / float(width)) - 1
+    l_y = (2 * l_y / float(height)) - 1
+    print(l_x, l_y)
+
+    p_x, p_y = np.meshgrid((2 * np.arange(width) / float(width)) - 1, (2 * np.arange(height) / float(height)) - 1)
+    p_d = np.sqrt((p_x - l_x)**2 + (p_y - l_y)**2)
     
     sin_theta = np.divide(p_y - l_y, p_d)
     cos_theta = np.divide(p_x - l_x, p_d)
 
+
     # If Light is above image, need to replace sin and cos at point
     # Exact direction shouldn't matter, because infinite choices
     # Other sin and cos will be inf or cause nan later on
-    if (l_x >= 0 and l_x < width and  l_y >= 0 and l_y < height):
-        sin_theta[l_y, l_x] = 0
-        cos_theta[l_y, l_x] = 1
+    # if (l_x >= 0 and l_x < width and  l_y >= 0 and l_y < height):
+    #     sin_theta[l_y, l_x] = 0
+    #     cos_theta[l_y, l_x] = 1
     
-    # orig_l_x = 475
-    # orig_l_y = 50
-    # if (orig_l_x >= 0 and orig_l_x < width and  orig_l_y >= 0 and orig_l_y < height):
-    #     sin_theta[orig_l_y, orig_l_x] = 0
-    #     cos_theta[orig_l_y, orig_l_x] = 1
+
+    orig_l_x = 480
+    orig_l_y = 0
+    if (orig_l_x >= 0 and orig_l_x < width and  orig_l_y >= 0 and orig_l_y < height):
+        sin_theta[orig_l_y, orig_l_x] = 0
+        cos_theta[orig_l_y, orig_l_x] = 1
 
     # print(sin_theta[l_y])
     # print(cos_theta[l_y])
@@ -123,21 +124,24 @@ def computeCoarseLightingEffect(N):
                 # print(light_direction)
                 
                 # Represent origin point on N and interpolated point offset by delta
-                n1 = N[
-                    round((l_y + sin_theta[y, x] * p_d[y, x])),
-                    round((l_x + cos_theta[y, x] * p_d[y, x])), 
-                    c]
-
-                x_interp = l_x + cos_theta[y, x] * (p_d[y, x] + delta)
-                y_interp = l_y + sin_theta[y, x] * (p_d[y, x] + delta) 
-                
                 # n1 = N[
-                #     round(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2)),
-                #     round(((l_x + cos_theta[y, x] * p_d[y, x]) + 1) * width / float(2)), 
+                #     round((l_y + sin_theta[y, x] * p_d[y, x])),
+                #     round((l_x + cos_theta[y, x] * p_d[y, x])), 
                 #     c]
 
-                # x_interp = ((l_x + cos_theta[y, x] * (p_d[y, x] + delta)) + 1) * width / float(2)
-                # y_interp = ((l_y + sin_theta[y, x] * (p_d[y, x] + delta)) + 1) * height / float(2)
+                # x_interp = l_x + cos_theta[y, x] * (p_d[y, x] + delta)
+                # y_interp = l_y + sin_theta[y, x] * (p_d[y, x] + delta) 
+                
+                n1 = N[
+                    round(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2)),
+                    round(((l_x + cos_theta[y, x] * p_d[y, x]) + 1) * width / float(2)), 
+                    c]
+
+                assert(abs(round(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2)) - y) < 1e3)
+                assert(abs(round(((l_x + cos_theta[y, x] * p_d[y, x]) + 1) * width / float(2)) - x) < 1e3)
+
+                x_interp = ((l_x + cos_theta[y, x] * (p_d[y, x] + delta)) + 1) * width / float(2)
+                y_interp = ((l_y + sin_theta[y, x] * (p_d[y, x] + delta)) + 1) * height / float(2)
 
                 n2 = bilinear_interpolate(N[:, :, c], x_interp, y_interp, width, height)
                 
@@ -182,14 +186,11 @@ def main():
     N = computeNormalizedChannelIntensity(img)
     cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
 
-
-    # TODO: push to branch
-    # TODO: examine mouse/light position bounds in Painting Light code
     N = cv2.imread("./data/sample-N.png", cv2.IMREAD_COLOR)
     N = N / float(255) 
 
     E = computeCoarseLightingEffect(N)
-    cv2.imwrite("./data/coarse-lighting-effect.png", (E * 255).astype(np.ubyte))
+    cv2.imwrite("./data/coarse-lighting-effect-normalized.png", (E * 255).astype(np.ubyte))
 
 if __name__ == "__main__":
     main()
