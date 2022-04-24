@@ -4,12 +4,14 @@ import cv2
 from scipy.spatial import ConvexHull
 import visualize
 import trimesh
+from lighting import pad_image
 
 
 # find the points from an input image
 def getPoints(image_string):
     # cv2's channels are BGR
     img = cv2.imread(image_string, cv2.IMREAD_COLOR)
+    img = pad_image(img)
     height, width, _ = img.shape
     # flip the r and b channels
     points = np.reshape(img, [-1, 3])
@@ -84,10 +86,19 @@ def getStrokeDensity(barycenter, ray_d, hull, loc_out_path):
 def save_stroke_density_as_img(stroke_density, h, w, out_path):
     print("saving stroke density to {} ...".format(out_path))
     img = np.reshape(stroke_density, (h, w, 1))
+    K = img
     img = img.astype(np.uint8)
     cv2.imwrite(out_path, img)
     print("saved stroke density!")
+    return K
 
+def get_stroke_density(input_path):
+    points, H, W = getPoints(input_path)
+    hull = getHull(points)
+    center = getMean(points)
+    ray_dirs = getRayDirs(center, points)
+    sd = getStrokeDensity(center, ray_dirs, hull, "./data/intersection.npz")
+    return save_stroke_density_as_img(sd, H, W, "./data/stroke_density.png")
 
 # run the stroke density algorithm
 def main():

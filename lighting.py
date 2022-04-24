@@ -166,6 +166,16 @@ def pad_image(img):
 
     return padded_img
 
+def get_lighting(input_path):
+    img = cv2.imread(input_path, cv2.IMREAD_COLOR)
+    padded_img = pad_image(img)
+    N = computeNormalizedChannelIntensity(padded_img)
+    cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
+    E = computeCoarseLightingEffect(N)
+    print(E.min(), E.max())
+    cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
+    return E
+
 def main():
     print("Testing lighting.py")
     img = cv2.imread("./data/sample-input.png", cv2.IMREAD_COLOR)
