@@ -11,7 +11,7 @@ def main():
 
     R = cv2.imread(raw_img_path, cv2.IMREAD_COLOR)
     R = lighting.pad_image(R)
-    K = stroke_density.get_stroke_density(raw_img_path)
+    K = stroke_density.get_stroke_density(raw_img_path, "./data/stroke_density.png")
     K = np.repeat(K, 3, -1)
     cv2.imwrite("./data/K.png", (K).astype(np.ubyte))
 
