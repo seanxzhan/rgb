@@ -1,4 +1,3 @@
-import wave
 import cv2
 import numpy as np
 from tqdm import tqdm
@@ -58,8 +57,10 @@ def computeCoarseLightingEffect(N):
     # TODO: Vectorize this
    
     # Top right of image
-    orig_l_x = l_x = 650
-    orig_l_y = l_y = 50
+    # orig_l_x = l_x = 650
+    # orig_l_y = l_y = 50
+    orig_l_x = l_x = 0
+    orig_l_y = l_y = 0
     l_z = 1
 
     height, width, _  = N.shape
@@ -128,8 +129,6 @@ def computeCoarseLightingEffect(N):
                 # if (E[y, x, c] < 0):
                 #     print("bad")
                 #     print(E[y, x, c])
-
-                counter += 1
     E = np.clip(E, 0, 1)
     return E
 
@@ -189,7 +188,7 @@ def main():
 
     E = computeCoarseLightingEffect(N)
     print(E.min(), E.max())
-    cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
+    cv2.imwrite("./data/E4.png", (E * 255).astype(np.ubyte))
 
 if __name__ == "__main__":
     main()
