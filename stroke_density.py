@@ -9,10 +9,11 @@ from tqdm import tqdm
 
 
 # find the points from an input image
-def getPoints(image_string):
+def getPoints(image_string, pad=False):
     # cv2's channels are BGR
     img = cv2.imread(image_string, cv2.IMREAD_COLOR)
-    img = pad_image(img)
+    if pad:
+        img = pad_image(img)
     height, width, _ = img.shape
     # flip the r and b channels
     points = np.reshape(img, [-1, 3])
@@ -58,8 +59,8 @@ def getStrokeDensity(barycenter, ray_d, hull, loc_out_path):
     num_rays = ray_d.shape[0]
     ray_p = np.repeat(np.reshape(barycenter, (1,-1)), axis=0, repeats=num_rays)
     mesh = trimesh.Trimesh(vertices=hull.points, faces=hull.simplices)
-    # if os.path.exists(loc_out_path):
-    if False:
+    if os.path.exists(loc_out_path):
+    # if False:
         print("loading intersection...")
         f = np.load(loc_out_path, allow_pickle=True)
         loc = f['loc']
@@ -70,7 +71,7 @@ def getStrokeDensity(barycenter, ray_d, hull, loc_out_path):
         # each loc corresponds to each ray_idx, ray_idx indexes into ray_d
         loc, ray_idx, _ = mesh.ray.intersects_location(
             ray_origins=ray_p, ray_directions=ray_d)
-        # np.savez_compressed(loc_out_path, loc=loc, ray_idx=ray_idx)
+        np.savez_compressed(loc_out_path, loc=loc, ray_idx=ray_idx)
     print("loaded intersection!")
     new_loc = np.zeros_like(loc)
     for i in range(loc.shape[0]):
@@ -93,8 +94,8 @@ def save_stroke_density_as_img(stroke_density, h, w, out_path):
     print("saved stroke density!")
     return K
 
-def get_stroke_density(input_path, output_path):
-    points, H, W = getPoints(input_path)
+def get_stroke_density(input_path, output_path, pad=False):
+    points, H, W = getPoints(input_path, pad)
     hull = getHull(points)
     center = getMean(points)
     ray_dirs = getRayDirs(center, points)
@@ -112,7 +113,7 @@ def get_all_stroke_density():
         input_path = os.path.join(data_dir, filename)
         output_path = os.path.join(results_dir, filename)
 
-        get_stroke_density(input_path, output_path)
+        get_stroke_density(input_path, output_path, pad=True)
 
 
 # run the stroke density algorithm

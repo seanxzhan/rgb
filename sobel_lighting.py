@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from lighting import pad_image
+import stroke_density as sd
 
 def generate_lighting_effects(stroke_density, content):
 
@@ -31,15 +32,31 @@ def main():
     # ambient_intensity = 0.1
     # light_intensity = 1
 
-    # define variables
-    light_color = np.array([1, 1, 1])
-    light_location = [1, 0, 0]
-    ambient_intensity = 0.45
-    light_intensity = .85
-
     # find the raw image and stroke density maps
-    raw_image = cv2.imread("./data/padded_sample_input.png", cv2.IMREAD_COLOR)
-    stroke_density = cv2.imread("./data/stroke_density.png", cv2.IMREAD_GRAYSCALE)
+    # raw_image = cv2.imread("./data/padded_sample_input.png", cv2.IMREAD_COLOR)
+    # stroke_density = cv2.imread("./data/stroke_density.png", cv2.IMREAD_GRAYSCALE)
+    raw_image = cv2.imread("./imgs/002.jpg", cv2.IMREAD_COLOR)
+    height, width, _ = raw_image.shape
+    stroke_density = sd.get_stroke_density("./imgs/002.jpg", "./data/stroke_density.png")
+    stroke_density = stroke_density[:, :, 0]
+
+    # define variables
+    light_x = 550
+    light_y = 0
+    # light_x = 550
+    # light_y = 350
+    # light_x = 0
+    # light_y = 350
+    # light_x = 0
+    # light_y = 0
+    light_color = np.array([1, 1, 1])
+    light_location = [
+        1,
+        - light_y / height * 2 + 1,
+        - light_x / width * 2 + 1]
+    print(light_location)
+    ambient_intensity = 0.45
+    light_intensity = 1
 
     # generate lighting affects
     lighting_effect = np.stack([
@@ -56,7 +73,7 @@ def main():
 
     # compute new image from the final effect, raw image, and other parameters
     rendered_image = ((ambient_intensity + final_effect * light_intensity) * light_color * raw_image).clip(0,255).astype(np.uint8)
-    cv2.imwrite("./data/sobel_lighting_example.png", (rendered_image).astype(np.ubyte))
+    cv2.imwrite("./data/E1.png", (rendered_image).astype(np.ubyte))
 
 
 if __name__ == "__main__":
