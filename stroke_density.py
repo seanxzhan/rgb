@@ -6,13 +6,14 @@ import visualize
 import trimesh
 from lighting import pad_image
 from tqdm import tqdm
+from PIL import Image, ImageEnhance
 
 
 # find the points from an input image
 def getPoints(image_string):
     # cv2's channels are BGR
     img = cv2.imread(image_string, cv2.IMREAD_COLOR)
-    img = pad_image(img)
+    # img = pad_image(img)
     height, width, _ = img.shape
     # flip the r and b channels
     points = np.reshape(img, [-1, 3])
@@ -58,8 +59,8 @@ def getStrokeDensity(barycenter, ray_d, hull, loc_out_path):
     num_rays = ray_d.shape[0]
     ray_p = np.repeat(np.reshape(barycenter, (1,-1)), axis=0, repeats=num_rays)
     mesh = trimesh.Trimesh(vertices=hull.points, faces=hull.simplices)
-    # if os.path.exists(loc_out_path):
-    if False:
+    if os.path.exists(loc_out_path):
+    # if False:
         print("loading intersection...")
         f = np.load(loc_out_path, allow_pickle=True)
         loc = f['loc']
@@ -70,7 +71,7 @@ def getStrokeDensity(barycenter, ray_d, hull, loc_out_path):
         # each loc corresponds to each ray_idx, ray_idx indexes into ray_d
         loc, ray_idx, _ = mesh.ray.intersects_location(
             ray_origins=ray_p, ray_directions=ray_d)
-        # np.savez_compressed(loc_out_path, loc=loc, ray_idx=ray_idx)
+        np.savez_compressed(loc_out_path, loc=loc, ray_idx=ray_idx)
     print("loaded intersection!")
     new_loc = np.zeros_like(loc)
     for i in range(loc.shape[0]):
@@ -80,7 +81,7 @@ def getStrokeDensity(barycenter, ray_d, hull, loc_out_path):
     numerator = np.linalg.norm(hull.points - ray_p, axis=1, keepdims=True)
     denominator = np.linalg.norm(ray_p - loc, axis=1, keepdims=True)
     K = numerator / denominator
-    K *= 1.2
+    # K *= 1.2
     K = np.clip(K, 0, 1) * 255
     return K
 
@@ -96,7 +97,8 @@ def save_stroke_density_as_img(stroke_density, h, w, out_path):
 def get_stroke_density(input_path, output_path):
     points, H, W = getPoints(input_path)
     hull = getHull(points)
-    center = getMean(points)
+    # center = getMean(points)
+    center = getBarycenter(hull)
     ray_dirs = getRayDirs(center, points)
     sd = getStrokeDensity(center, ray_dirs, hull, "./data/intersection.npz")
     return save_stroke_density_as_img(sd, H, W, output_path)
@@ -121,12 +123,13 @@ def main():
     # exit(0)
 
     VIS = False
-    USE_BARYCENTER = False
+    USE_BARYCENTER = True
 
-    input_filename = '013.jpg'
+    # input_filename = '013.jpg'
 
-    # points, H, W = getPoints("./data/sample-input.png")
-    points, H, W = getPoints("./imgs/" + input_filename)
+    points, H, W = getPoints("./data/sample-input.png")
+    # points, H, W = getPoints("./data/sample-input-2.png")
+    # points, H, W = getPoints("./imgs/" + input_filename)
     hull = getHull(points)
     if VIS:
         plt = visualize.show_convex_hull(hull)
@@ -141,9 +144,21 @@ def main():
 
     ray_dirs = getRayDirs(center, points)
     stroke_density = getStrokeDensity(center, ray_dirs, hull, "./data/intersection.npz")
-    # save_stroke_density_as_img(stroke_density, H, W, "./data/stroke_density.png")
-    save_stroke_density_as_img(stroke_density, H, W, "./stroke_density/"+input_filename)
+    save_stroke_density_as_img(stroke_density, H, W, "./data/stroke_density_bary.png")
+    # save_stroke_density_as_img(stroke_density, H, W, "./stroke_density/"+input_filename)
 
 
 if __name__ == "__main__":
+    # input_path = "./data/sample-input.png"
+    # image = Image.open(input_path)
+    # enhancer = ImageEnhance.Contrast(image)
+    # image = enhancer.enhance(1.5)
+    # image.save("./data/sample-input-1.png")
+
     main()
+
+    # input_path = "./data/stroke_density_bary.png"
+    # image = Image.open(input_path)
+    # enhancer = ImageEnhance.Contrast(image)
+    # image = enhancer.enhance(2)
+    # image.save("./data/test.png")

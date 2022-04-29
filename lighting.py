@@ -57,8 +57,20 @@ def computeCoarseLightingEffect(N):
     # TODO: Vectorize this
    
     # Top right of image
-    # orig_l_x = l_x = 650
-    # orig_l_y = l_y = 50
+    # # orig_l_x = l_x = 480
+    # # orig_l_y = l_y = 0
+    # # orig_l_x = l_x = 480
+    # # orig_l_y = l_y = 680
+    # # orig_l_x = l_x = 0
+    # # orig_l_y = l_y = 680
+    # orig_l_x = l_x = 0
+    # orig_l_y = l_y = 0
+    # orig_l_x = l_x = 550
+    # orig_l_y = l_y = 0
+    # orig_l_x = l_x = 550
+    # orig_l_y = l_y = 600
+    # orig_l_x = l_x = 0
+    # orig_l_y = l_y = 600
     orig_l_x = l_x = 0
     orig_l_y = l_y = 0
     l_z = 1
@@ -79,7 +91,8 @@ def computeCoarseLightingEffect(N):
    
     # Is this a relative or absolute value??
     # delta = 2 * float(1.0) / float(width) # This is 1 pixel in [-1, 1] x [-1, 1]
-    delta = 2 * 50 * float(1.0) / float(width) # This works much better 
+    # delta = 2 * 50 * float(1.0) / float(width) # This works much better 
+    delta = 0.01
 
     # Normalizing light/mouse location to [-1, 1] x [-1, 1]
     # I think l_z = 1 is fine??
@@ -164,8 +177,8 @@ def pad_image(img):
 
 def get_lighting(input_path):
     img = cv2.imread(input_path, cv2.IMREAD_COLOR)
-    padded_img = pad_image(img)
-    N = computeNormalizedChannelIntensity(padded_img)
+    # padded_img = pad_image(img)
+    N = computeNormalizedChannelIntensity(img)
     cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
     E = computeCoarseLightingEffect(N)
     print(E.min(), E.max())
@@ -174,11 +187,10 @@ def get_lighting(input_path):
 
 def main():
     print("Testing lighting.py")
-    img = cv2.imread("./data/sample-input.png", cv2.IMREAD_COLOR)
-    
-    padded_img = pad_image(img)
+    img = cv2.imread("./data/013.jpg", cv2.IMREAD_COLOR)
+    # padded_img = pad_image(img)
 
-    N = computeNormalizedChannelIntensity(padded_img)
+    N = computeNormalizedChannelIntensity(img)
     cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
 
     # Uses saved N image from paper screenshot
@@ -187,7 +199,7 @@ def main():
     # N = N / float(255) 
 
     E = computeCoarseLightingEffect(N)
-    print(E.min(), E.max())
+    # print(E.min(), E.max())
     cv2.imwrite("./data/E4.png", (E * 255).astype(np.ubyte))
 
 if __name__ == "__main__":

@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 from tqdm import tqdm
+from PIL import Image, ImageEnhance
 
 # channel intensity normalization (N)
 # Input: rgb image [0, 255] (height, width, channels)
@@ -70,8 +71,8 @@ def norm_to_canvas(height, width, y, x):
     return adj_y, adj_x
 
 def computeCoarseLightingEffect(N):
-    delta_pd = 0.06
-    light_x = 0
+    delta_pd = 0.01
+    light_x = 480
     light_y = 0
     light_z = 1
 
@@ -113,9 +114,23 @@ def computeCoarseLightingEffect(N):
     E = np.clip(E, 0, 1)
     return E
 
+def get_lighting(input_path):
+    img = cv2.imread(input_path, cv2.IMREAD_COLOR)
+    N = computeNormalizedChannelIntensity(img)
+    cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
+    E = computeCoarseLightingEffect(N)
+    cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
+    return E
+
+
 if __name__ == "__main__":
     img = cv2.imread("./data/sample-input.png", cv2.IMREAD_COLOR)
     N = computeNormalizedChannelIntensity(img)
     cv2.imwrite("./data/N.png", (N * 255).astype(np.ubyte))
     E = computeCoarseLightingEffect(N)
-    cv2.imwrite("./data/E4.png", (E * 255).astype(np.ubyte))
+    cv2.imwrite("./data/E11.png", (E * 255).astype(np.ubyte))
+
+    # image = Image.open("./data/E1.png")
+    # enhancer = ImageEnhance.Color(image)
+    # image = enhancer.enhance(0.3)
+    # image.save("./data/E1_1.png")
