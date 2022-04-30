@@ -51,10 +51,6 @@ def computeStrokeDensity(barycenter, ray_d, hull, loc_out_path, H, W):
     ray_p = np.repeat(np.reshape(barycenter, (1,-1)), axis=0, repeats=num_rays)
     mesh = trimesh.Trimesh(vertices=hull.points, faces=hull.simplices)
     if os.path.exists(loc_out_path):
-<<<<<<< HEAD
-=======
-    # if False:
->>>>>>> master
         print("loading intersection...")
         f = np.load(loc_out_path, allow_pickle=True)
         loc = f['loc']
@@ -81,13 +77,8 @@ def computeStrokeDensity(barycenter, ray_d, hull, loc_out_path, H, W):
     return K
 
 
-<<<<<<< HEAD
 def get_stroke_density(img, intersect_path):
     points, H, W = getPoints(img)
-=======
-def get_stroke_density(input_path, output_path, pad=False):
-    points, H, W = getPoints(input_path, pad)
->>>>>>> master
     hull = getHull(points)
     center = getBarycenter(hull)
     ray_dirs = getRayDirs(center, points)
