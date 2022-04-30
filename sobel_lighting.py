@@ -35,20 +35,32 @@ def main():
     # find the raw image and stroke density maps
     # raw_image = cv2.imread("./data/padded_sample_input.png", cv2.IMREAD_COLOR)
     # stroke_density = cv2.imread("./data/stroke_density.png", cv2.IMREAD_GRAYSCALE)
-    raw_image = cv2.imread("./imgs/002.jpg", cv2.IMREAD_COLOR)
+    raw_image = cv2.imread("./imgs/sample-input.png", cv2.IMREAD_COLOR)
     height, width, _ = raw_image.shape
-    stroke_density = sd.get_stroke_density("./imgs/002.jpg", "./data/stroke_density.png")
+    stroke_density = sd.get_stroke_density(raw_image, './tmp/intersection.npz')
     stroke_density = stroke_density[:, :, 0]
+    stroke_density *= 255
+
+    which_corner = 1
 
     # define variables
-    light_x = 550
-    light_y = 0
-    # light_x = 550
-    # light_y = 350
-    # light_x = 0
-    # light_y = 350
-    # light_x = 0
-    # light_y = 0
+    if which_corner == 1:
+        # top right
+        light_x = width - 1
+        light_y = 0
+    elif which_corner == 2:
+        # bottom right
+        light_x = width - 1
+        light_y = height - 1
+    elif which_corner == 3:
+        # bottom left
+        light_x = 0
+        light_y = height - 1
+    elif which_corner == 4:
+        # top left
+        light_x = 0
+        light_y = 0
+
     light_color = np.array([1, 1, 1])
     light_location = [
         1,
@@ -69,11 +81,11 @@ def main():
     light_source_location = np.array([[light_location]], dtype=np.float32)
     light_source_direction = light_source_location / np.sqrt(np.sum(np.square(light_source_location)))
     final_effect = np.sum(lighting_effect * light_source_direction, axis=3).clip(0, 1)
-    cv2.imwrite("./data/sobel_effect.png", (final_effect * 255).astype(np.ubyte))
+    cv2.imwrite("./tmp/sobel_effect.png", (final_effect * 255).astype(np.ubyte))
 
     # compute new image from the final effect, raw image, and other parameters
     rendered_image = ((ambient_intensity + final_effect * light_intensity) * light_color * raw_image).clip(0,255).astype(np.uint8)
-    cv2.imwrite("./data/E1.png", (rendered_image).astype(np.ubyte))
+    cv2.imwrite("./tmp/E1.png", (rendered_image).astype(np.ubyte))
 
 
 if __name__ == "__main__":

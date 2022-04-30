@@ -84,10 +84,6 @@ def get_stroke_density(img, intersect_path):
     ray_dirs = getRayDirs(center, points)
     return computeStrokeDensity(center, ray_dirs, hull, intersect_path, H, W)
 
-<<<<<<< HEAD
-=======
-        get_stroke_density(input_path, output_path, pad=True)
->>>>>>> master
 
 def main():
     VIS = False
