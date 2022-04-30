@@ -3,6 +3,7 @@ import numpy as np
 from tqdm import tqdm
 from PIL import Image, ImageEnhance
 
+
 # channel intensity normalization (N)
 # Input: rgb image [0, 255] (height, width, channels)
 def computeNormalizedChannelIntensity(input):
@@ -27,6 +28,7 @@ def computeNormalizedChannelIntensity(input):
 
     return normalized_c
 
+
 def bilinear_interpolate(im, x, y, width, height):
     epsilon = 1e-5
     if (x < 0): x = epsilon
@@ -50,6 +52,7 @@ def bilinear_interpolate(im, x, y, width, height):
     wd = (x-x0) * (y-y0)
     return wa*Ia + wb*Ib + wc*Ic + wd*Id
 
+
 def canvas_to_norm(height, width, y, x):
     # maps canvas coords to [-0.5, 0.5]
     h_c = int(height / 2)
@@ -70,13 +73,29 @@ def norm_to_canvas(height, width, y, x):
 
     return adj_y, adj_x
 
-def computeCoarseLightingEffect(N):
+def computeCoarseLightingEffect(N, which_corner):
     delta_pd = 0.01
-    light_x = 480
-    light_y = 0
     light_z = 1
 
     height, width, _ = N.shape
+
+    if which_corner == 1:
+        # top right
+        light_x = width - 1
+        light_y = 0
+    elif which_corner == 2:
+        # bottom right
+        light_x = width - 1
+        light_y = height - 1
+    elif which_corner == 3:
+        # bottom left
+        light_x = 0
+        light_y = height - 1
+    elif which_corner == 4:
+        # top left
+        light_x = 0
+        light_y = 0
+
     light_y, light_x = canvas_to_norm(height, width, light_y, light_x)
 
     E = np.empty(N.shape)
@@ -114,23 +133,19 @@ def computeCoarseLightingEffect(N):
     E = np.clip(E, 0, 1)
     return E
 
-def get_lighting(input_path):
-    img = cv2.imread(input_path, cv2.IMREAD_COLOR)
+
+def get_lighting(img, which_corner):
     N = computeNormalizedChannelIntensity(img)
-    cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
-    E = computeCoarseLightingEffect(N)
-    cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
-    return E
+    E = computeCoarseLightingEffect(N, which_corner)
+    return N, E
 
 
 if __name__ == "__main__":
-    img = cv2.imread("./data/sample-input.png", cv2.IMREAD_COLOR)
-    N = computeNormalizedChannelIntensity(img)
-    cv2.imwrite("./data/N.png", (N * 255).astype(np.ubyte))
-    E = computeCoarseLightingEffect(N)
-    cv2.imwrite("./data/E11.png", (E * 255).astype(np.ubyte))
+    img = cv2.imread("./tmp/sample-input.png", cv2.IMREAD_COLOR)
 
-    # image = Image.open("./data/E1.png")
-    # enhancer = ImageEnhance.Color(image)
-    # image = enhancer.enhance(0.3)
-    # image.save("./data/E1_1.png")
+    N = computeNormalizedChannelIntensity(img)
+    cv2.imwrite("./tmp/l2_N.png", (N * 255).astype(np.ubyte))
+
+    which_corner = 1
+    E = computeCoarseLightingEffect(N, which_corner)
+    cv2.imwrite("./tmp/l2_E"+str(which_corner)+".png", (E * 255).astype(np.ubyte))

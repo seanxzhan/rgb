@@ -53,41 +53,29 @@ def bilinear_interpolate(im, x, y, width, height):
 # coarse lighting effect
 # Input: N - normalized input channels
 # Params: L - light position, delta - scaling scalar, distance offset
-def computeCoarseLightingEffect(N):
+def computeCoarseLightingEffect(N, which_corner):
     # TODO: Vectorize this
-   
-    # Top right of image
-    # # orig_l_x = l_x = 480
-    # # orig_l_y = l_y = 0
-    # # orig_l_x = l_x = 480
-    # # orig_l_y = l_y = 680
-    # # orig_l_x = l_x = 0
-    # # orig_l_y = l_y = 680
-    # orig_l_x = l_x = 0
-    # orig_l_y = l_y = 0
-    # orig_l_x = l_x = 550
-    # orig_l_y = l_y = 0
-    # orig_l_x = l_x = 550
-    # orig_l_y = l_y = 600
-    # orig_l_x = l_x = 0
-    # orig_l_y = l_y = 600
-    orig_l_x = l_x = 0
-    orig_l_y = l_y = 0
+
     l_z = 1
 
     height, width, _  = N.shape
-    print(width, height)
 
-    top_left = np.array([0, 0], dtype=np.float32)
-    top_right = np.array([0, width-1], dtype=np.float32)
-    bottom_left = np.array([height-1, 0], dtype=np.float32)
-    bottom_right = np.array([height-1, width-1], dtype=np.float32)
-    light_loc = np.array([l_y, l_x], dtype=np.float32)
-    corners = [top_left, top_right, bottom_left, bottom_right]
-    dists = []
-    for corner in corners:
-        dists.append(np.sqrt(np.square(light_loc - corner)))
-    max_dist = np.max(dists)
+    if which_corner == 1:
+        # top right
+        orig_l_x = l_x = width - 1
+        orig_l_y = l_y = 0
+    elif which_corner == 2:
+        # bottom right
+        orig_l_x = l_x = width - 1
+        orig_l_y = l_y = height - 1
+    elif which_corner == 3:
+        # bottom left
+        orig_l_x = l_x = 0
+        orig_l_y = l_y = height - 1
+    elif which_corner == 4:
+        # top left
+        orig_l_x = l_x = 0
+        orig_l_y = l_y = 0
    
     # Is this a relative or absolute value??
     # delta = 2 * float(1.0) / float(width) # This is 1 pixel in [-1, 1] x [-1, 1]
@@ -98,7 +86,6 @@ def computeCoarseLightingEffect(N):
     # I think l_z = 1 is fine??
     l_x = (2 * l_x / float(width)) - 1
     l_y = (2 * l_y / float(height)) - 1
-    print(l_x, l_y)
 
     p_x, p_y = np.meshgrid((2 * np.arange(width) / float(width)) - 1, (2 * np.arange(height) / float(height)) - 1)
     p_d = np.sqrt((p_x - l_x)**2 + (p_y - l_y)**2)
@@ -175,32 +162,28 @@ def pad_image(img):
 
     return padded_img
 
-def get_lighting(input_path):
-    img = cv2.imread(input_path, cv2.IMREAD_COLOR)
+def get_lighting(img, which_corner):
     # padded_img = pad_image(img)
     N = computeNormalizedChannelIntensity(img)
-    cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
-    E = computeCoarseLightingEffect(N)
-    print(E.min(), E.max())
-    cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
-    return E
+    E = computeCoarseLightingEffect(N, which_corner)
+    return N, E
 
 def main():
     print("Testing lighting.py")
-    img = cv2.imread("./data/013.jpg", cv2.IMREAD_COLOR)
+    img = cv2.imread("./tmp/sample-input.png", cv2.IMREAD_COLOR)
     # padded_img = pad_image(img)
 
     N = computeNormalizedChannelIntensity(img)
-    cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
+    cv2.imwrite("./tmp/N.png", (N * 255).astype(np.ubyte))
 
     # Uses saved N image from paper screenshot
     # N = cv2.imread("./data/sample-N.png", cv2.IMREAD_COLOR)
     # N = pad_image(N)
     # N = N / float(255) 
 
-    E = computeCoarseLightingEffect(N)
-    # print(E.min(), E.max())
-    cv2.imwrite("./data/E4.png", (E * 255).astype(np.ubyte))
+    which_corner = 1
+    E = computeCoarseLightingEffect(N, which_corner)
+    cv2.imwrite("./tmp/E"+str(which_corner)+".png", (E * 255).astype(np.ubyte))
 
 if __name__ == "__main__":
     main()
