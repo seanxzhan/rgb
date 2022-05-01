@@ -34,12 +34,17 @@ def main():
 
     # find the raw image and stroke density maps
     # raw_image = cv2.imread("./data/padded_sample_input.png", cv2.IMREAD_COLOR)
-    # stroke_density = cv2.imread("./data/stroke_density.png", cv2.IMREAD_GRAYSCALE)
-    raw_image = cv2.imread("./imgs/sample-input.png", cv2.IMREAD_COLOR)
+    stroke_density = cv2.imread("./tmp/stroke_density.png", cv2.IMREAD_GRAYSCALE)
+    raw_image = cv2.imread("./tmp/sample-input.png", cv2.IMREAD_COLOR)
     height, width, _ = raw_image.shape
-    stroke_density = sd.get_stroke_density(raw_image, './tmp/intersection.npz')
-    stroke_density = stroke_density[:, :, 0]
-    stroke_density *= 255
+
+    # stroke_density = sd.get_stroke_density(raw_image, './tmp/intersection.npz')
+    # stroke_density = stroke_density[:, :, 0]
+    # stroke_density *= 255
+    # stroke_density = np.clip(stroke_density, 0, 255).astype(np.uint8)
+
+    # print(stroke_density[300:310, 300:310])
+    # print(stroke_density.dtype)
 
     which_corner = 1
 
