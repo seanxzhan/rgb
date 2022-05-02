@@ -109,8 +109,8 @@ def computeCoarseLightingEffect(N, which_corner):
                 
                 # n1 - Represents origin point on N 
                 n1 = N[
-                    round(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2)),
-                    round(((l_x + cos_theta[y, x] * p_d[y, x]) + 1) * width / float(2)), 
+                    int(round(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2))),
+                    int(round(((l_x + cos_theta[y, x] * p_d[y, x]) + 1) * width / float(2))), 
                     c]
 
                 assert(abs(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2) - y) < 1e3)
