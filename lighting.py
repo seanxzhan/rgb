@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 # channel intensity normalization (N)
 # Input: rgb image [0, 255] (height, width, channels)
-def computeNormalizedChannelIntensity(input):
+def computeNormalizedChannelIntensity(input, desaturate = False, saturation_factor = 0.85):
     
     # I made kernel_size and std_dev for kernel relative to image size
     img_size = min([input.shape[0], input.shape[1]])
@@ -23,6 +23,19 @@ def computeNormalizedChannelIntensity(input):
 
     normalized_c = (blurred_img - min_c) / (max_c - min_c).astype(np.float64)
     # normalized_c = blurred_img / max_c
+
+    if desaturate:
+        # HSV, lower saturation
+        N_hsv = cv2.cvtColor((normalized_c * 255).astype(np.ubyte), cv2.COLOR_BGR2HSV).astype("float32")
+        (h, s, v) = cv2.split(N_hsv)
+        saturation_factor = 0.80
+        s = s * saturation_factor
+        
+        s = np.clip(s, 0, 255)
+        N_hsv = cv2.merge([h, s, v])
+        N_rgb = cv2.cvtColor(N_hsv.astype("uint8"), cv2.COLOR_HSV2BGR)
+        # cv2.imwrite("./tmp/N-hsv-0.80.png", N_rgb)
+        normalized_c = N_rgb
 
     return normalized_c
 
@@ -175,17 +188,6 @@ def main():
 
     N = computeNormalizedChannelIntensity(img)
     cv2.imwrite("./tmp/N.png", (N * 255).astype(np.ubyte))
-
-    # HSV, lower saturation
-    N_hsv = cv2.cvtColor((N * 255).astype(np.ubyte), cv2.COLOR_BGR2HSV).astype("float32")
-    (h, s, v) = cv2.split(N_hsv)
-    saturation_factor = 0.9
-    s = s * saturation_factor
-    
-    s = np.clip(s, 0, 255)
-    N_hsv = cv2.merge([h, s, v])
-    N_rgb = cv2.cvtColor(N_hsv.astype("uint8"), cv2.COLOR_HSV2BGR)
-    cv2.imwrite("./data/normalized-channels-debug-hsv-0.9.png", N_rgb)
     
     # Uses saved N image from paper screenshot
     # N = cv2.imread("./data/sample-N.png", cv2.IMREAD_COLOR)
