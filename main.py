@@ -94,8 +94,9 @@ if __name__ == "__main__":
 
     input_path = os.path.join(data_dir, filename)
     results_dir = os.path.join(all_results_dir, os.path.splitext(filename)[0])
+    
     if not os.path.exists(results_dir):
-        os.mkdir(results_dir)
+        os.makedirs(results_dir)
 
     # for all 4 corners
     for c in range(1, 5):
