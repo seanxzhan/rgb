@@ -33,7 +33,9 @@ def main(input_path, results_dir, scale_percent, which_corner):
     cv2.imwrite(K_out, (K * 255).astype(np.ubyte))
 
     # normalized channel and coarse lighting
-    N, E = lighting.get_lighting(R, which_corner) # 0~1
+    desaturate = False
+    saturation_factor = 1.0 # Only relevant if desaturate = True
+    N, E = lighting.get_lighting(R, which_corner, desaturate, saturation_factor) # 0~1
     cv2.imwrite(N_out, (N * 255).astype(np.ubyte))
     cv2.imwrite(E_out, (E * 255).astype(np.ubyte))
 
@@ -86,7 +88,7 @@ if __name__ == "__main__":
 
     data_dir = "./imgs"
     all_results_dir = "./results"
-    filename = "sample-input.png"
+    filename = "007.jpg"
 
     # scales down the image to make things go faster
     # manually add key value pair above

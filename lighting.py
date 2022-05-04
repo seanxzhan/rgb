@@ -28,7 +28,6 @@ def computeNormalizedChannelIntensity(input, desaturate = False, saturation_fact
         # HSV, lower saturation
         N_hsv = cv2.cvtColor((normalized_c * 255).astype(np.ubyte), cv2.COLOR_BGR2HSV).astype("float32")
         (h, s, v) = cv2.split(N_hsv)
-        saturation_factor = 0.80
         s = s * saturation_factor
         
         s = np.clip(s, 0, 255)
@@ -175,9 +174,9 @@ def pad_image(img):
 
     return padded_img
 
-def get_lighting(img, which_corner):
+def get_lighting(img, which_corner, desaturate = False, saturation_factor = 0.85):
     # padded_img = pad_image(img)
-    N = computeNormalizedChannelIntensity(img)
+    N = computeNormalizedChannelIntensity(img, desaturate, saturation_factor)
     E = computeCoarseLightingEffect(N, which_corner)
     return N, E
 
