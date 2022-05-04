@@ -1,7 +1,6 @@
-from PIL import Image, ImageEnhance
 import cv2
-from cv2 import blur
 import numpy as np
+from tqdm import tqdm
 
 # channel intensity normalization (N)
 # Input: rgb image [0, 255] (height, width, channels)
@@ -23,13 +22,12 @@ def computeNormalizedChannelIntensity(input):
     min_c = np.array([blurred_img[:, :, 0].min(), blurred_img[:, :, 1].min(), blurred_img[:, :, 2].min()])
 
     normalized_c = (blurred_img - min_c) / (max_c - min_c).astype(np.float64)
+    # normalized_c = blurred_img / max_c
 
     return normalized_c
 
 
 def bilinear_interpolate(im, x, y, width, height):
-    
-    # Added to handle boundary cases properly
     epsilon = 1e-5
     if (x < 0): x = epsilon
     if (y < 0): y = epsilon
@@ -41,15 +39,6 @@ def bilinear_interpolate(im, x, y, width, height):
     y0 = np.floor(y).astype(int)
     y1 = y0 + 1
 
-    # x0 = np.clip(x0, 0, width-1)
-    # x1 = np.clip(x1, 0, width-1)
-    # y0 = np.clip(y0, 0, height-1)
-    # y1 = np.clip(y1, 0, height-1)
-
-    # print(x, y)
-    # print(x0, y0)
-    # print(x1, y1)
-
     Ia = im[ y0, x0 ]
     Ib = im[ y1, x0 ]
     Ic = im[ y0, x1 ]
@@ -59,34 +48,44 @@ def bilinear_interpolate(im, x, y, width, height):
     wb = (x1-x) * (y-y0)
     wc = (x-x0) * (y1-y)
     wd = (x-x0) * (y-y0)
-
-    # print("weights: ", wa, wb, wc, wd)
-
     return wa*Ia + wb*Ib + wc*Ic + wd*Id
 
 # coarse lighting effect
 # Input: N - normalized input channels
 # Params: L - light position, delta - scaling scalar, distance offset
-def computeCoarseLightingEffect(N):
+def computeCoarseLightingEffect(N, which_corner):
     # TODO: Vectorize this
-   
-    # Top right of image
-    orig_l_x = l_x = 650
-    orig_l_y = l_y = 50
+
     l_z = 1
 
     height, width, _  = N.shape
-    print(width, height)
+
+    if which_corner == 1:
+        # top right
+        orig_l_x = l_x = width - 1
+        orig_l_y = l_y = 0
+    elif which_corner == 2:
+        # bottom right
+        orig_l_x = l_x = width - 1
+        orig_l_y = l_y = height - 1
+    elif which_corner == 3:
+        # bottom left
+        orig_l_x = l_x = 0
+        orig_l_y = l_y = height - 1
+    elif which_corner == 4:
+        # top left
+        orig_l_x = l_x = 0
+        orig_l_y = l_y = 0
    
     # Is this a relative or absolute value??
     # delta = 2 * float(1.0) / float(width) # This is 1 pixel in [-1, 1] x [-1, 1]
-    delta = 2 * 50 * float(1.0) / float(width) # This works much better 
+    # delta = 2 * 50 * float(1.0) / float(width) # This works much better 
+    delta = 0.01
 
     # Normalizing light/mouse location to [-1, 1] x [-1, 1]
     # I think l_z = 1 is fine??
     l_x = (2 * l_x / float(width)) - 1
     l_y = (2 * l_y / float(height)) - 1
-    print(l_x, l_y)
 
     p_x, p_y = np.meshgrid((2 * np.arange(width) / float(width)) - 1, (2 * np.arange(height) / float(height)) - 1)
     p_d = np.sqrt((p_x - l_x)**2 + (p_y - l_y)**2)
@@ -102,7 +101,7 @@ def computeCoarseLightingEffect(N):
         cos_theta[orig_l_y, orig_l_x] = 1
 
     E = np.empty(N.shape)
-    for y in range(height):
+    for y in tqdm(range(height)):
         for x in range(width):
             for c in range(3):
                 light_direction = np.array([l_z, p_d[y, x]])
@@ -110,8 +109,8 @@ def computeCoarseLightingEffect(N):
                 
                 # n1 - Represents origin point on N 
                 n1 = N[
-                    round(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2)),
-                    round(((l_x + cos_theta[y, x] * p_d[y, x]) + 1) * width / float(2)), 
+                    int(round(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2))),
+                    int(round(((l_x + cos_theta[y, x] * p_d[y, x]) + 1) * width / float(2))), 
                     c]
 
                 assert(abs(((l_y + sin_theta[y, x] * p_d[y, x]) + 1) * height / float(2) - y) < 1e3)
@@ -130,7 +129,6 @@ def computeCoarseLightingEffect(N):
                 # if (E[y, x, c] < 0):
                 #     print("bad")
                 #     print(E[y, x, c])
-
     E = np.clip(E, 0, 1)
     return E
 
@@ -164,24 +162,19 @@ def pad_image(img):
 
     return padded_img
 
-def get_lighting(input_path):
-    img = cv2.imread(input_path, cv2.IMREAD_COLOR)
-    padded_img = pad_image(img)
-    N = computeNormalizedChannelIntensity(padded_img)
-    cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
-    E = computeCoarseLightingEffect(N)
-    print(E.min(), E.max())
-    cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
-    return E
+def get_lighting(img, which_corner):
+    # padded_img = pad_image(img)
+    N = computeNormalizedChannelIntensity(img)
+    E = computeCoarseLightingEffect(N, which_corner)
+    return N, E
 
 def main():
     print("Testing lighting.py")
-    img = cv2.imread("./data/sample-input.png", cv2.IMREAD_COLOR)
-    
-    padded_img = pad_image(img)
+    img = cv2.imread("./tmp/sample-input.png", cv2.IMREAD_COLOR)
+    # padded_img = pad_image(img)
 
-    N = computeNormalizedChannelIntensity(padded_img)
-    cv2.imwrite("./data/normalized-channels-debug.png", (N * 255).astype(np.ubyte))
+    N = computeNormalizedChannelIntensity(img)
+    cv2.imwrite("./tmp/N.png", (N * 255).astype(np.ubyte))
 
     # HSV, lower saturation
     N_hsv = cv2.cvtColor((N * 255).astype(np.ubyte), cv2.COLOR_BGR2HSV).astype("float32")
@@ -193,15 +186,15 @@ def main():
     N_hsv = cv2.merge([h, s, v])
     N_rgb = cv2.cvtColor(N_hsv.astype("uint8"), cv2.COLOR_HSV2BGR)
     cv2.imwrite("./data/normalized-channels-debug-hsv-0.9.png", N_rgb)
-
+    
     # Uses saved N image from paper screenshot
     # N = cv2.imread("./data/sample-N.png", cv2.IMREAD_COLOR)
     # N = pad_image(N)
     # N = N / float(255) 
 
-    # E = computeCoarseLightingEffect(N)
-    # print(E.min(), E.max())
-    # cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
+    which_corner = 1
+    E = computeCoarseLightingEffect(N, which_corner)
+    cv2.imwrite("./tmp/E"+str(which_corner)+".png", (E * 255).astype(np.ubyte))
 
 if __name__ == "__main__":
     main()

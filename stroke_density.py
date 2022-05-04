@@ -4,16 +4,11 @@ import cv2
 from scipy.spatial import ConvexHull
 import visualize
 import trimesh
-from lighting import pad_image
-from tqdm import tqdm
 
 
 # find the points from an input image
-def getPoints(image_string, pad=False):
-    # cv2's channels are BGR
-    img = cv2.imread(image_string, cv2.IMREAD_COLOR)
-    if pad:
-        img = pad_image(img)
+def getPoints(img):
+    # img = pad_image(img)
     height, width, _ = img.shape
     # flip the r and b channels
     points = np.reshape(img, [-1, 3])
@@ -44,10 +39,6 @@ def getBarycenter(hull):
     return total
 
 
-def getMean(points):
-    return np.mean(points, axis=0)
-
-
 def getRayDirs(barycenter, points):
     diff = points - barycenter
     factor = np.linalg.norm(diff, axis=1, keepdims=True)
@@ -55,12 +46,11 @@ def getRayDirs(barycenter, points):
 
 
 # get the intersections of each ray from the barycenter to the colors
-def getStrokeDensity(barycenter, ray_d, hull, loc_out_path):
+def computeStrokeDensity(barycenter, ray_d, hull, loc_out_path, H, W):
     num_rays = ray_d.shape[0]
     ray_p = np.repeat(np.reshape(barycenter, (1,-1)), axis=0, repeats=num_rays)
     mesh = trimesh.Trimesh(vertices=hull.points, faces=hull.simplices)
     if os.path.exists(loc_out_path):
-    # if False:
         print("loading intersection...")
         f = np.load(loc_out_path, allow_pickle=True)
         loc = f['loc']
@@ -81,69 +71,38 @@ def getStrokeDensity(barycenter, ray_d, hull, loc_out_path):
     numerator = np.linalg.norm(hull.points - ray_p, axis=1, keepdims=True)
     denominator = np.linalg.norm(ray_p - loc, axis=1, keepdims=True)
     K = numerator / denominator
-    K *= 1.2
-    K = np.clip(K, 0, 1) * 255
+    K = np.clip(K, 0, 1)
+    K = np.reshape(K, (H, W, 1))
+    K = np.repeat(K, repeats=3, axis=-1)
     return K
 
-def save_stroke_density_as_img(stroke_density, h, w, out_path):
-    print("saving stroke density to {} ...".format(out_path))
-    img = np.reshape(stroke_density, (h, w, 1))
-    K = img
-    img = img.astype(np.uint8)
-    cv2.imwrite(out_path, img)
-    print("saved stroke density!")
-    return K
 
-def get_stroke_density(input_path, output_path, pad=False):
-    points, H, W = getPoints(input_path, pad)
+def get_stroke_density(img, intersect_path):
+    points, H, W = getPoints(img)
     hull = getHull(points)
-    center = getMean(points)
+    center = getBarycenter(hull)
     ray_dirs = getRayDirs(center, points)
-    sd = getStrokeDensity(center, ray_dirs, hull, "./data/intersection.npz")
-    return save_stroke_density_as_img(sd, H, W, output_path)
+    return computeStrokeDensity(center, ray_dirs, hull, intersect_path, H, W)
 
 
-def get_all_stroke_density():
-    data_dir = "./imgs"
-    results_dir = "./stroke_density"
-    for filename in tqdm(os.listdir("./imgs")):
-        if os.path.splitext(filename)[1] != ".jpg":
-            continue
-
-        input_path = os.path.join(data_dir, filename)
-        output_path = os.path.join(results_dir, filename)
-
-        get_stroke_density(input_path, output_path, pad=True)
-
-
-# run the stroke density algorithm
 def main():
-    # get_all_stroke_density()
-    # exit(0)
-
     VIS = False
-    USE_BARYCENTER = False
 
-    input_filename = '013.jpg'
-
-    # points, H, W = getPoints("./data/sample-input.png")
-    points, H, W = getPoints("./imgs/" + input_filename)
+    in_path = "./tmp/sample-input.png"
+    img = cv2.imread(in_path, cv2.IMREAD_COLOR)
+    points, H, W = getPoints(img)
     hull = getHull(points)
     if VIS:
         plt = visualize.show_convex_hull(hull)
-        plt.savefig("./data/convex_hull_vis.png", bbox_inches='tight', pad_inches=0)
+        plt.savefig("./tmp/convex_hull_vis.png", bbox_inches='tight', pad_inches=0)
         plt.show()
         plt.close()
     
-    if USE_BARYCENTER:
-        center = getBarycenter(hull)
-    else:
-        center = getMean(points)
-
+    center = getBarycenter(hull)
     ray_dirs = getRayDirs(center, points)
-    stroke_density = getStrokeDensity(center, ray_dirs, hull, "./data/intersection.npz")
-    # save_stroke_density_as_img(stroke_density, H, W, "./data/stroke_density.png")
-    save_stroke_density_as_img(stroke_density, H, W, "./stroke_density/"+input_filename)
+    K = computeStrokeDensity(center, ray_dirs, hull, "./tmp/intersection.npz", H, W)
+    sd_out_path = "./tmp/stroke_density.png"
+    cv2.imwrite(sd_out_path, (K * 255).astype(np.uint8))
 
 
 if __name__ == "__main__":
