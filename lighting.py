@@ -1,5 +1,6 @@
-import wave
+from PIL import Image, ImageEnhance
 import cv2
+from cv2 import blur
 import numpy as np
 
 # channel intensity normalization (N)
@@ -20,9 +21,6 @@ def computeNormalizedChannelIntensity(input):
     blurred_img = cv2.GaussianBlur(input, (kernel_size, kernel_size), std_dev, cv2.BORDER_DEFAULT)
     max_c = np.array([blurred_img[:, :, 0].max(), blurred_img[:, :, 1].max(), blurred_img[:, :, 2].max()])
     min_c = np.array([blurred_img[:, :, 0].min(), blurred_img[:, :, 1].min(), blurred_img[:, :, 2].min()])
-
-    # print(max_c)
-    # print(min_c)
 
     normalized_c = (blurred_img - min_c) / (max_c - min_c).astype(np.float64)
 
@@ -183,16 +181,27 @@ def main():
     padded_img = pad_image(img)
 
     N = computeNormalizedChannelIntensity(padded_img)
-    cv2.imwrite("./data/normalized-channels.png", (N * 255).astype(np.ubyte))
+    cv2.imwrite("./data/normalized-channels-debug.png", (N * 255).astype(np.ubyte))
+
+    # HSV, lower saturation
+    N_hsv = cv2.cvtColor((N * 255).astype(np.ubyte), cv2.COLOR_BGR2HSV).astype("float32")
+    (h, s, v) = cv2.split(N_hsv)
+    saturation_factor = 0.9
+    s = s * saturation_factor
+    
+    s = np.clip(s, 0, 255)
+    N_hsv = cv2.merge([h, s, v])
+    N_rgb = cv2.cvtColor(N_hsv.astype("uint8"), cv2.COLOR_HSV2BGR)
+    cv2.imwrite("./data/normalized-channels-debug-hsv-0.9.png", N_rgb)
 
     # Uses saved N image from paper screenshot
     # N = cv2.imread("./data/sample-N.png", cv2.IMREAD_COLOR)
     # N = pad_image(N)
     # N = N / float(255) 
 
-    E = computeCoarseLightingEffect(N)
-    print(E.min(), E.max())
-    cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
+    # E = computeCoarseLightingEffect(N)
+    # print(E.min(), E.max())
+    # cv2.imwrite("./data/E.png", (E * 255).astype(np.ubyte))
 
 if __name__ == "__main__":
     main()
