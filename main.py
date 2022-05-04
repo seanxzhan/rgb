@@ -27,7 +27,6 @@ def main(input_path, results_dir, scale_percent, which_corner):
     dim = (width, height)
     R = cv2.resize(R, dim, interpolation = cv2.INTER_AREA)
     print("resized shape: {}, {}".format(width, height))
-    cv2.imwrite(N_out, R)
     
     # stroke density
     K = stroke_density.get_stroke_density(R, intersect_path)
@@ -36,7 +35,6 @@ def main(input_path, results_dir, scale_percent, which_corner):
     # normalized channel and coarse lighting
     N, E = lighting.get_lighting(R, which_corner) # 0~1
     cv2.imwrite(N_out, (N * 255).astype(np.ubyte))
-    exit()
     cv2.imwrite(E_out, (E * 255).astype(np.ubyte))
 
     # TODO: single image normal estimation for specular
