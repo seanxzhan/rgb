@@ -3,7 +3,7 @@ import re
 import cv2
 import numpy as np
 from PIL import Image
-import stroke_density, lighting
+import stroke_density, lighting, lighting_vectorized
 
 
 def main(input_path, results_dir, scale_percent, which_corner):
@@ -36,6 +36,7 @@ def main(input_path, results_dir, scale_percent, which_corner):
     desaturate = False
     saturation_factor = 1.0 # Only relevant if desaturate = True
     N, E = lighting.get_lighting(R, which_corner, desaturate, saturation_factor) # 0~1
+    # N, E = lighting_vectorized.get_lighting(R, which_corner) # 0~1
     cv2.imwrite(N_out, (N * 255).astype(np.ubyte))
     cv2.imwrite(E_out, (E * 255).astype(np.ubyte))
 
@@ -79,7 +80,7 @@ if __name__ == "__main__":
     scale_dict = {
         "sample-input.png": 100,
         "007.jpg": 60,
-        "013.jpg": 60,
+        "013.jpg": 100,
         "018.jpg": 60,
         "022.jpg": 60,
         "028.jpg": 40,
@@ -88,7 +89,7 @@ if __name__ == "__main__":
 
     data_dir = "./imgs"
     all_results_dir = "./results"
-    filename = "007.jpg"
+    filename = "sample-input.png"
 
     # scales down the image to make things go faster
     # manually add key value pair above

@@ -11,7 +11,7 @@ def getPoints(img):
     # img = pad_image(img)
     height, width, _ = img.shape
     # flip the r and b channels
-    points = np.reshape(img, [-1, 3])
+    points = np.reshape(img, [-1, 3]).copy()
     r = points[:, 0].copy()
     b = points[:, 2].copy()
     points[:, 0] = b

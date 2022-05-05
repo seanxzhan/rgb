@@ -64,7 +64,7 @@ def computeCoarseLightingEffect(N, which_corner):
         orig_l_y = l_y = 0
    
     # large delta gives better coarse lighting results, small delta gives better final results
-    delta = 0.01
+    delta = 0.05
 
     # determine light/mouse location between [-1,1]
     l_x = (2 * l_x / float(width)) - 1
