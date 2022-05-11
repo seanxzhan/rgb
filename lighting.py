@@ -34,7 +34,7 @@ def computeNormalizedChannelIntensity(input, desaturate = False, saturation_fact
         N_hsv = cv2.merge([h, s, v])
         N_rgb = cv2.cvtColor(N_hsv.astype("uint8"), cv2.COLOR_HSV2BGR)
         # cv2.imwrite("./tmp/N-hsv-0.80.png", N_rgb)
-        normalized_c = N_rgb
+        normalized_c = N_rgb / 255
 
     return normalized_c
 
@@ -185,7 +185,7 @@ def main():
     img = cv2.imread("./tmp/sample-input.png", cv2.IMREAD_COLOR)
     # padded_img = pad_image(img)
 
-    N = computeNormalizedChannelIntensity(img)
+    N = computeNormalizedChannelIntensity(img, True, 0.80)
     cv2.imwrite("./tmp/N.png", (N * 255).astype(np.ubyte))
     
     # Uses saved N image from paper screenshot

@@ -4,21 +4,47 @@ import numpy as np
 from tqdm import tqdm
 import time
 
+
 # channel intensity normalization (N)
 # Input: rgb image [0, 255] (height, width, channels)
-def computeNormalizedChannelIntensity(input):
+def computeNormalizedChannelIntensity(input, desat = False, saturation_factor = 0.85):
     
+    # I made kernel_size and std_dev for kernel relative to image size
     img_size = min([input.shape[0], input.shape[1]])
+    # img_size = max([input.shape[0], input.shape[1]])
+    
     kernel_size = int(img_size / 8)
+    # Make odd sized
     if (kernel_size % 2) == 0 :
         kernel_size = kernel_size + 1
+
     std_dev = round(kernel_size / 4)
+
     blurred_img = cv2.GaussianBlur(input, (kernel_size, kernel_size), std_dev, cv2.BORDER_DEFAULT)
     max_c = np.array([blurred_img[:, :, 0].max(), blurred_img[:, :, 1].max(), blurred_img[:, :, 2].max()])
     min_c = np.array([blurred_img[:, :, 0].min(), blurred_img[:, :, 1].min(), blurred_img[:, :, 2].min()])
+
     normalized_c = (blurred_img - min_c) / (max_c - min_c).astype(np.float64)
+    # normalized_c = blurred_img / max_c
+
+    if desat:
+        desaturate(normalized_c, saturation_factor)
 
     return normalized_c
+
+
+def desaturate(input, saturation_factor):
+    N_hsv = cv2.cvtColor((input * 255).astype(np.ubyte), cv2.COLOR_BGR2HSV).astype("float32")
+    (h, s, v) = cv2.split(N_hsv)
+    s = s * saturation_factor
+    
+    s = np.clip(s, 0, 255)
+    N_hsv = cv2.merge([h, s, v])
+    N_rgb = cv2.cvtColor(N_hsv.astype("uint8"), cv2.COLOR_HSV2BGR)
+    input = N_rgb / 255
+
+    return input
+
 
 # vectorized interpolation of yinterp/xinterp arrays given image to interpolate
 def bilinear_interpolate(image, yinterp, xinterp, height, width):
@@ -64,7 +90,7 @@ def computeCoarseLightingEffect(N, which_corner):
         orig_l_y = l_y = 0
    
     # large delta gives better coarse lighting results, small delta gives better final results
-    delta = 0.05
+    delta = 0.1
 
     # determine light/mouse location between [-1,1]
     l_x = (2 * l_x / float(width)) - 1
@@ -134,10 +160,12 @@ def pad_image(img):
     return padded_img
 
 
-def get_lighting(img, which_corner):
-
-    N = computeNormalizedChannelIntensity(img)
+def get_lighting(img, which_corner, desat_normal=False, normal_desat_factor=0.85,
+                 desat_coarse=False, coarse_desat_factor=0.5):
+    N = computeNormalizedChannelIntensity(img, desat_normal, normal_desat_factor)
     E = computeCoarseLightingEffect(N, which_corner)
+    if desat_coarse:
+        E = desaturate(E, coarse_desat_factor)
     return N, E
 
 
@@ -146,11 +174,13 @@ def main():
     start_time = time.time()
     print("Testing lighting.py")
     img = cv2.imread("./tmp/sample-input.png", cv2.IMREAD_COLOR)
-    N = computeNormalizedChannelIntensity(img)
-    cv2.imwrite("./tmp/N.png", (N * 255).astype(np.ubyte))
+    N = computeNormalizedChannelIntensity(img, desat=False, saturation_factor=0.1)
+    cv2.imwrite("./tmp/N1.png", (N * 255).astype(np.ubyte))
     which_corner = 1
     E = computeCoarseLightingEffect(N, which_corner)
     cv2.imwrite("./tmp/E"+str(which_corner)+".png", (E * 255).astype(np.ubyte))
+    E = desaturate(E, 0.5)
+    cv2.imwrite("./tmp/E"+str(which_corner)+"_desat.png", (E * 255).astype(np.ubyte))
     print("time taken = " + str(round(time.time() - start_time, 3)))
 
 
