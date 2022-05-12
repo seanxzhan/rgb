@@ -1,9 +1,8 @@
-import wave
 import cv2
 import numpy as np
 from tqdm import tqdm
 import time
-
+import math
 
 # channel intensity normalization (N)
 # Input: rgb image [0, 255] (height, width, channels)
@@ -68,7 +67,7 @@ def bilinear_interpolate(image, yinterp, xinterp, height, width):
 # coarse lighting effect
 # Input: N - normalized input channels
 # Params: L - light position, delta - scaling scalar, distance offset
-def computeCoarseLightingEffect(N, which_corner):
+def computeCoarseLightingEffect(N, which_corner, use_spotlight = True):
 
     # find the coordinates of the light given the corner input
     height, width, _  = N.shape
@@ -129,6 +128,27 @@ def computeCoarseLightingEffect(N, which_corner):
     
     # calculate E
     E = np.sum(lights_direction * waves_direction, axis=3).clip(0,1)
+
+    if use_spotlight:
+        # TODO: spot light computations
+        # note: very sensitive to parameters
+    
+        hotspot_angle = 1.0 * math.pi # 'width' of spotlighgt
+        cos_alpha = math.cos(hotspot_angle)
+
+        l_r = 2 # longest range of illum 
+        
+        denominator = np.sqrt(np.square(p_d) + l_z * l_z)
+        h = (float(1) / (float(1) - cos_alpha)) * ((float(l_z) / denominator) - cos_alpha)
+        h = np.expand_dims(h, axis = 2)
+
+        d = np.clip((l_r / denominator) - 1.0, 0, 1)
+        d = np.expand_dims(d, axis = 2)
+
+        # applying spot light
+        E = np.multiply(E, h)
+        E = np.multiply(E, d)
+
     return E
 
 
