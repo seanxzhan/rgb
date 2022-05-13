@@ -9,7 +9,8 @@ import stroke_density, lighting_specular
 def main(input_path, depth_in_path, results_dir,
          light_which_corner, eye_which_corner):
     raw_img_path = input_path
-    output_path = os.path.join(results_dir, "rendered"+str(eye_which_corner)+".png")
+    output_path = os.path.join(results_dir, "rendered"+str(light_which_corner)+".png")
+    output_w_spec_path = os.path.join(results_dir, "rendered"+str(light_which_corner)+str(eye_which_corner)+".png")
     K_out = os.path.join(results_dir, "K.png")
     intersect_path = os.path.join(results_dir, "intersections.npz")
     N_out = os.path.join(results_dir, "N.png")
@@ -51,15 +52,21 @@ def main(input_path, depth_in_path, results_dir,
     EK = EK.clip(0, 1)
     cv2.imwrite(EK_out, (EK * 255).astype(np.ubyte))
 
-    # output
-    S = light_intensity * EK + ambient_intensity + specular
-    SS = S.copy()
+    # output, normal
+    S = light_intensity * EK + ambient_intensity
     S = S.clip(0, 1)
     S = S**1.5
-    cv2.imwrite(S_out, (S * 255).astype(np.ubyte))
-
     I = np.multiply(R, S).clip(0, 255)
+    cv2.imwrite(S_out, (S * 255).astype(np.ubyte))
     cv2.imwrite(output_path, (I).astype(np.ubyte))
+
+    # output, specular
+    SS = light_intensity * EK + ambient_intensity + specular
+    SS = SS.clip(0, 1)
+    SS = SS**1.5
+    II = np.multiply(R, SS).clip(0, 255)
+    cv2.imwrite(SS_out, (SS * 255).astype(np.ubyte))
+    cv2.imwrite(output_w_spec_path, (II).astype(np.ubyte))
 
 
 def sorted_alphanumeric(data):
@@ -83,7 +90,7 @@ def save_images_as_gif(dir_, condition, gif_name):
 
 
 if __name__ == "__main__":
-    id = "013"
+    id = "012"
     assert id in ["007", "012", "013", "016", "028", "cb"]
 
     data_dir = "./imgs"
@@ -100,8 +107,9 @@ if __name__ == "__main__":
 
     # set light to top right
     # for all 4 eye corners
-    for c in range(1, 5):
-        main(input_path, depth_input_path, results_dir, 1, c)
+    # for c in range(1, 5):
+    main(input_path, depth_input_path, results_dir,
+         light_which_corner=1, eye_which_corner=3)
 
     def condition(f):
         return f[:8] == "rendered"

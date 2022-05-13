@@ -25,9 +25,12 @@ def show_convex_hull(hull: ConvexHull):
 
     # sample points on the hull's surface, show color
     mesh = trimesh.Trimesh(vertices=hull.points, faces=hull.simplices)
-    sampled_points, _ = trimesh.sample.sample_surface(mesh, 10000)
+    # sampled_points, _ = trimesh.sample.sample_surface(mesh, 10000)
+    sampled_points = trimesh.sample.volume_mesh(mesh, 30000)
     adj_col = sampled_points / 256
     adj_col = adj_col.tolist()
     ax.scatter(sampled_points[:, 0], sampled_points[:, 1], sampled_points[:, 2], alpha=1, c=adj_col)
-
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_zticklabels([])
     return plt

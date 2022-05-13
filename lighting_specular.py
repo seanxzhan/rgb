@@ -202,7 +202,7 @@ def get_lighting(R, d_im, light_which_corner, eye_which_corner):
 
 
 if __name__ == "__main__":
-    id = "007"
+    id = "013"
     assert id in ["007", "012", "013", "016", "028", "cb"]
     R = cv2.imread("./imgs/"+id+".jpg", cv2.IMREAD_COLOR)
     R = resize_and_pad(R)
@@ -211,6 +211,7 @@ if __name__ == "__main__":
     d_im = cv2.imread("./specular/"+id+"/padded_R_depth.jpg",
                       cv2.IMREAD_GRAYSCALE)
     d_im = d_im[:, int(d_im.shape[1] / 2):]
+    cv2.imwrite("./specular/"+id+"/cropped_depth.png", d_im)
 
     d_im = cv2.blur(d_im, (20, 20))
     cv2.imwrite("./specular/"+id+"/blurred_depth.png", d_im)
@@ -226,7 +227,7 @@ if __name__ == "__main__":
     N = computeNormalizedChannelIntensity(R)
     cv2.imwrite("./specular/"+id+"/N.png", (N * 255).astype(np.ubyte))
     light_which_corner = 1
-    eye_which_corner = 2
+    eye_which_corner = 3
     E, specular = computeCoarseLightingEffect(
         N, norm, light_which_corner, eye_which_corner)
     cv2.imwrite(

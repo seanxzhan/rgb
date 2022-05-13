@@ -67,11 +67,13 @@ def computeStrokeDensity(barycenter, ray_d, hull, loc_out_path, H, W):
     for i in range(loc.shape[0]):
         new_loc[ray_idx[i]] = loc[i]
     loc = new_loc
-    # numerator = np.linalg.norm(hull.points - loc, axis=1, keepdims=True)
-    numerator = np.linalg.norm(hull.points - ray_p, axis=1, keepdims=True)
+    # numerator = np.linalg.norm(hull.points - ray_p, axis=1, keepdims=True)
+    # denominator = np.linalg.norm(ray_p - loc, axis=1, keepdims=True)
+    numerator = np.linalg.norm(hull.points - loc, axis=1, keepdims=True)
     denominator = np.linalg.norm(ray_p - loc, axis=1, keepdims=True)
     K = numerator / denominator
     K = np.clip(K, 0, 1)
+    K = 1 - K
     K = np.reshape(K, (H, W, 1))
     K = np.repeat(K, repeats=3, axis=-1)
     return K
@@ -88,7 +90,7 @@ def get_stroke_density(img, intersect_path):
 def main():
     VIS = False
 
-    in_path = "./tmp/sample-input.png"
+    in_path = "./imgs/sample-input.png"
     img = cv2.imread(in_path, cv2.IMREAD_COLOR)
     points, H, W = getPoints(img)
     hull = getHull(points)
@@ -98,6 +100,7 @@ def main():
         plt.show()
         plt.close()
     
+    # exit(0)
     center = getBarycenter(hull)
     ray_dirs = getRayDirs(center, points)
     K = computeStrokeDensity(center, ray_dirs, hull, "./tmp/intersection.npz", H, W)

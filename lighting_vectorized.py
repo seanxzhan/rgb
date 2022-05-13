@@ -161,7 +161,7 @@ def pad_image(img):
 
 
 def get_lighting(img, which_corner, desat_normal=False, normal_desat_factor=0.85,
-                 desat_coarse=False, coarse_desat_factor=0.5):
+                 desat_coarse=False, coarse_desat_factor=0.3):
     N = computeNormalizedChannelIntensity(img, desat_normal, normal_desat_factor)
     E = computeCoarseLightingEffect(N, which_corner)
     if desat_coarse:
