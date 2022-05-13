@@ -4,6 +4,7 @@ import cv2
 import numpy as np
 from PIL import Image
 import stroke_density, lighting, lighting_vectorized
+from lighting_specular import resize_and_pad
 
 
 def main(input_path, results_dir, scale_percent, which_corner):
@@ -26,6 +27,7 @@ def main(input_path, results_dir, scale_percent, which_corner):
     height = int(R.shape[0] * scale_percent / 100)
     dim = (width, height)
     R = cv2.resize(R, dim, interpolation = cv2.INTER_AREA)
+    # R = resize_and_pad(R)
     print("resized shape: {}, {}".format(width, height))
     
     # stroke density
@@ -81,18 +83,24 @@ def save_images_as_gif(dir_, condition, gif_name):
 if __name__ == "__main__":
     scale_dict = {
         "sample-input.png": 100,
-        "007.jpg": 60,
+        "007.jpg": 40,
+        "012.jpg": 60,
         "013.jpg": 100,
+        "016.jpg": 60,
         "018.jpg": 60,
         "022.jpg": 60,
         "023.jpg": 30,
-        "028.jpg": 40,
+        "026.jpg": 50,
+        "028.jpg": 30,
+        "040.jpg": 50,
         "042.jpg": 60,
+        "cb.jpg": 100,
     }
 
     data_dir = "./imgs"
     all_results_dir = "./results"
-    filename = "023.jpg"
+    # filename = "sample-input.png"
+    filename = "018.jpg"
 
     # scales down the image to make things go faster
     # manually add key value pair above
