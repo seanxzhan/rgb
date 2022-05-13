@@ -67,7 +67,7 @@ def bilinear_interpolate(image, yinterp, xinterp, height, width):
 # coarse lighting effect
 # Input: N - normalized input channels
 # Params: L - light position, delta - scaling scalar, distance offset
-def computeCoarseLightingEffect(N, which_corner, use_spotlight = True):
+def computeCoarseLightingEffect(N, which_corner, use_spotlight = False):
 
     # find the coordinates of the light given the corner input
     height, width, _  = N.shape
