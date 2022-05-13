@@ -107,9 +107,9 @@ if __name__ == "__main__":
 
     # set light to top right
     # for all 4 eye corners
-    # for c in range(1, 5):
-    main(input_path, depth_input_path, results_dir,
-         light_which_corner=1, eye_which_corner=3)
+    for c in range(1, 5):
+        main(input_path, depth_input_path, results_dir,
+             light_which_corner=c, eye_which_corner=3)
 
     def condition(f):
         return f[:8] == "rendered"
